@@ -230,3 +230,75 @@ class StorageManager:
     def save_settings(self, settings: Settings):
         """Save application settings."""
         self._write_json(SETTINGS_FILE, settings.to_dict())
+    
+    # Daily Plan Operations
+    
+    def get_daily_plan(self, plan_date: str) -> Optional['DailyPlan']:
+        """Get daily plan for a specific date."""
+        from models.daily_plan import DailyPlan
+        data = self._read_json(DAILY_PLANS_FILE)
+        
+        for plan_data in data:
+            if plan_data.get("date") == plan_date:
+                return DailyPlan.from_dict(plan_data)
+        return None
+    
+    def get_daily_plans_range(self, start_date: str, end_date: str) -> List['DailyPlan']:
+        """Get daily plans for a date range."""
+        from models.daily_plan import DailyPlan
+        from datetime import datetime
+        
+        data = self._read_json(DAILY_PLANS_FILE)
+        plans = []
+        
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+        
+        for plan_data in data:
+            plan_date = datetime.fromisoformat(plan_data.get("date"))
+            if start <= plan_date <= end:
+                plans.append(DailyPlan.from_dict(plan_data))
+        
+        return sorted(plans, key=lambda p: p.date)
+    
+    def get_week_plans(self, start_date: str) -> List[Optional['DailyPlan']]:
+        """Get 7 days of plans starting from start_date."""
+        from models.daily_plan import DailyPlan
+        from datetime import datetime, timedelta
+        
+        start = datetime.fromisoformat(start_date)
+        plans = []
+        
+        for i in range(7):
+            current_date = (start + timedelta(days=i)).strftime("%Y-%m-%d")
+            plan = self.get_daily_plan(current_date)
+            plans.append(plan)
+        
+        return plans
+    
+    def save_daily_plan(self, plan: 'DailyPlan'):
+        """Save a daily plan (create or update)."""
+        from models.daily_plan import DailyPlan
+        
+        self._create_backup(DAILY_PLANS_FILE)
+        data = self._read_json(DAILY_PLANS_FILE)
+        
+        # Update existing or add new
+        updated = False
+        for i, plan_data in enumerate(data):
+            if plan_data.get("date") == plan.date:
+                data[i] = plan.to_dict()
+                updated = True
+                break
+        
+        if not updated:
+            data.append(plan.to_dict())
+        
+        self._write_json(DAILY_PLANS_FILE, data)
+    
+    def delete_daily_plan(self, plan_date: str):
+        """Delete a daily plan."""
+        self._create_backup(DAILY_PLANS_FILE)
+        data = self._read_json(DAILY_PLANS_FILE)
+        data = [p for p in data if p.get("date") != plan_date]
+        self._write_json(DAILY_PLANS_FILE, data)

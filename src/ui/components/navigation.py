@@ -86,7 +86,7 @@ class NavigationBar(ctk.CTkFrame):
         settings_btn = ctk.CTkButton(
             right_frame,
             text="⚙️",
-            command=on_settings,
+            command=self.on_settings,
             width=40,
             height=40,
             corner_radius=8,
