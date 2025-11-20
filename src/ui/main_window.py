@@ -19,6 +19,7 @@ from ui.components.settings_dialog import SettingsDialog
 from ui.views.projects import ProjectsView
 from ui.views.tasks import TasksView
 from ui.views.daily_planner import DailyPlannerView
+from ui.views.analytics import AnalyticsView
 
 
 class MainWindow(ctk.CTk):
@@ -79,13 +80,7 @@ class MainWindow(ctk.CTk):
             elif view_name == "daily_planner":
                 self.views[view_name] = DailyPlannerView(self.content_area, self.storage)
             elif view_name == "analytics":
-                # Placeholder for Phase 3
-                placeholder = ctk.CTkLabel(
-                    self.content_area,
-                    text="Analytics\n(Coming in Phase 3)",
-                    font=("Segoe UI", 24)
-                )
-                self.views[view_name] = placeholder
+                self.views[view_name] = AnalyticsView(self.content_area, self.storage)
         
         return self.views[view_name]
     

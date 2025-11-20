@@ -202,6 +202,58 @@ class SettingsDialog(ctk.CTkToplevel):
         )
         self.backup_status.pack(side="left", padx=(16, 0))
         
+        # Export/Import section
+        ctk.CTkLabel(tab, text="Export Data", font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(20, 8))
+        
+        export_frame = ctk.CTkFrame(tab, fg_color="transparent")
+        export_frame.pack(fill="x", pady=(0, 8))
+        
+        IconButton(
+            export_frame,
+            text="📤 Export All (JSON)",
+            command=self._export_all_json,
+            width=180,
+            font=("Segoe UI", 12)
+        ).pack(side="left", padx=(0, 8))
+        
+        IconButton(
+            export_frame,
+            text="📊 Export Projects (CSV)",
+            command=self._export_projects_csv,
+            width=180,
+            font=("Segoe UI", 12)
+        ).pack(side="left", padx=(0, 8))
+        
+        IconButton(
+            export_frame,
+            text="📋 Export Tasks (CSV)",
+            command=self._export_tasks_csv,
+            width=180,
+            font=("Segoe UI", 12)
+        ).pack(side="left")
+        
+        # Import section
+        ctk.CTkLabel(tab, text="Import Data", font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(12, 8))
+        
+        import_frame = ctk.CTkFrame(tab, fg_color="transparent")
+        import_frame.pack(fill="x", pady=(0, 20))
+        
+        IconButton(
+            import_frame,
+            text="📥 Import from JSON",
+            command=self._import_json,
+            width=180,
+            font=("Segoe UI", 12)
+        ).pack(side="left")
+        
+        self.import_status = ctk.CTkLabel(
+            import_frame,
+            text="",
+            font=("Segoe UI", 12),
+            text_color="gray60"
+        )
+        self.import_status.pack(side="left", padx=(16, 0))
+        
         # Data location
         ctk.CTkLabel(tab, text="Data Storage", font=("Segoe UI", 14, "bold")).pack(anchor="w", pady=(20, 8))
         
@@ -329,6 +381,82 @@ class SettingsDialog(ctk.CTkToplevel):
         # Show success and close
         self.backup_status.configure(text="✓ All data cleared (backup created)")
         self.after(2000, self.destroy)
+    
+    def _export_all_json(self):
+        """Export all data to JSON."""
+        from tkinter import filedialog
+        from utils.export_utils import export_all_data_json
+        from datetime import datetime
+        
+        filename = f"deskflow_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json")],
+            initialfile=filename
+        )
+        
+        if filepath:
+            success = export_all_data_json(self.storage, filepath)
+            if success:
+                self.backup_status.configure(text="✓ Data exported successfully")
+            else:
+                self.backup_status.configure(text="✗ Export failed")
+    
+    def _export_projects_csv(self):
+        """Export projects to CSV."""
+        from tkinter import filedialog
+        from utils.export_utils import export_projects_csv
+        from datetime import datetime
+        
+        filename = f"projects_{datetime.now().strftime('%Y%m%d')}.csv"
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv")],
+            initialfile=filename
+        )
+        
+        if filepath:
+            projects = self.storage.get_all_projects()
+            success = export_projects_csv(projects, filepath)
+            if success:
+                self.backup_status.configure(text="✓ Projects exported")
+            else:
+                self.backup_status.configure(text="✗ Export failed")
+    
+    def _export_tasks_csv(self):
+        """Export tasks to CSV."""
+        from tkinter import filedialog
+        from utils.export_utils import export_tasks_csv
+        from datetime import datetime
+        
+        filename = f"tasks_{datetime.now().strftime('%Y%m%d')}.csv"
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv")],
+            initialfile=filename
+        )
+        
+        if filepath:
+            tasks = self.storage.get_all_tasks()
+            success = export_tasks_csv(tasks, filepath)
+            if success:
+                self.backup_status.configure(text="✓ Tasks exported")
+            else:
+                self.backup_status.configure(text="✗ Export failed")
+    
+    def _import_json(self):
+        """Import data from JSON."""
+        from tkinter import filedialog
+        from utils.export_utils import import_all_data_json
+        
+        filepath = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json")],
+            title="Select JSON file to import"
+        )
+        
+        if filepath:
+            success, message = import_all_data_json(filepath, self.storage)
+            self.import_status.configure(text=message)
     
     def _on_save(self):
         """Save settings."""

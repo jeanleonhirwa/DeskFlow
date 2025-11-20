@@ -11,7 +11,7 @@ import tempfile
 
 from config import (
     DATA_DIR, BACKUP_DIR, LOGS_DIR,
-    PROJECTS_FILE, TASKS_FILE, SETTINGS_FILE,
+    PROJECTS_FILE, TASKS_FILE, DAILY_PLANS_FILE, SETTINGS_FILE,
     DEFAULT_SETTINGS,
     MAX_BACKUPS, BACKUP_FILE_PREFIX
 )
@@ -42,6 +42,10 @@ class StorageManager:
         # Tasks file
         if not TASKS_FILE.exists():
             self._write_json(TASKS_FILE, [])
+        
+        # Daily plans file
+        if not DAILY_PLANS_FILE.exists():
+            self._write_json(DAILY_PLANS_FILE, [])
         
         # Settings file
         if not SETTINGS_FILE.exists():
