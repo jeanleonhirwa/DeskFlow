@@ -111,7 +111,11 @@ class NotificationManager:
         now = datetime.now()
         tomorrow = now + timedelta(days=1)
         
-        tasks = self.storage.get_all_tasks()
+        try:
+            tasks = self.storage.get_all_tasks()
+        except:
+            return
+        
         for task in tasks:
             if task.status == "completed" or not task.due_date:
                 continue
@@ -131,13 +135,18 @@ class NotificationManager:
                             lambda t=task: self._open_task(t)
                         )
                         task._notified_due_soon = True
-            except:
-                pass
+            except Exception:
+                # Silently skip tasks with validation or parsing errors
+                continue
     
     def _check_overdue_tasks(self):
         """Check for overdue tasks."""
         now = datetime.now()
-        tasks = self.storage.get_all_tasks()
+        
+        try:
+            tasks = self.storage.get_all_tasks()
+        except:
+            return
         
         for task in tasks:
             if task.status == "completed" or not task.due_date:
@@ -158,8 +167,9 @@ class NotificationManager:
                             lambda t=task: self._open_task(t)
                         )
                         task._notified_overdue = now
-            except:
-                pass
+            except Exception:
+                # Silently skip tasks with validation or parsing errors
+                continue
     
     def _open_tasks_view(self):
         """Callback to open tasks view."""
