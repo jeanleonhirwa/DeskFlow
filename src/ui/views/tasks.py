@@ -350,8 +350,9 @@ class TaskFormDialog(ctk.CTkToplevel):
         
         # Configure window
         self.title("New Task" if not task else "Edit Task")
-        self.geometry("600x750")
-        self.resizable(False, False)
+        self.geometry("600x650")
+        self.resizable(True, True)
+        self.minsize(550, 600)
         
         # Make modal
         self.transient(parent)
