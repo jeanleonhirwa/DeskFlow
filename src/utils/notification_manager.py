@@ -15,7 +15,7 @@ class NotificationManager:
         self.show_notification = show_notification_callback
         self.running = False
         self.check_interval = 300  # Check every 5 minutes
-       self.thread = None
+        self.thread = None
         
         # Get notification settings
         settings = self.storage.get_settings()
