@@ -100,6 +100,27 @@ class TaskCard(ctk.CTkFrame):
                     text_color=("#E07B53", "#F4A261")
                 )
                 tag_label.pack(side="left", padx=(0, 6))
+        
+        # Dependencies indicator
+        if self.task.dependencies:
+            dep_count = len(self.task.dependencies)
+            dep_label = ctk.CTkLabel(
+                content,
+                text=f"🔗 {dep_count} {'dependency' if dep_count == 1 else 'dependencies'}",
+                font=("Segoe UI", 10),
+                text_color="gray60"
+            )
+            dep_label.pack(anchor="w", pady=(4, 0))
+        
+        # Timer running indicator
+        if self.task.timer_running:
+            timer_label = ctk.CTkLabel(
+                content,
+                text="⏱️ Timer running",
+                font=("Segoe UI", 10, "bold"),
+                text_color=("#4CAF50", "#66BB6A")
+            )
+            timer_label.pack(anchor="w", pady=(4, 0))
 
 
 class KanbanColumn(ctk.CTkFrame):
@@ -429,6 +450,47 @@ class TaskFormDialog(ctk.CTkToplevel):
         self.blocked_entry = ctk.CTkEntry(container, font=("Segoe UI", 13), height=40)
         self.blocked_entry.pack(fill="x", pady=(0, 16))
         
+        # Dependencies
+        ctk.CTkLabel(container, text="Dependencies", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(0, 4))
+        ctk.CTkLabel(
+            container,
+            text="Select tasks that must be completed before this one:",
+            font=("Segoe UI", 11),
+            text_color="gray60"
+        ).pack(anchor="w", pady=(0, 8))
+        
+        # Dependencies checklist in scrollable frame
+        deps_frame = ctk.CTkScrollableFrame(container, height=120, fg_color=("#F5F5F0", "#3A3A3A"))
+        deps_frame.pack(fill="x", pady=(0, 16))
+        
+        self.dependency_vars = {}  # Map task_id to checkbox variable
+        self._render_dependencies_list(deps_frame)
+
+        # Time Tracking Section
+        ctk.CTkLabel(container, text="Time Tracking", font=("Segoe UI", 13, "bold")).pack(anchor="w", pady=(16, 4))
+        
+        # Total logged hours
+        total_hours = self.task.actual_hours if self.task and self.task.actual_hours else 0
+        hours_label = ctk.CTkLabel(
+            container,
+            text=f"Total Logged: {total_hours:.2f} hours",
+            font=("Segoe UI", 12),
+            text_color="gray60"
+        )
+        hours_label.pack(anchor="w", pady=(0, 8))
+        
+        # Timer widget
+        from ui.components.timer_widget import TimerWidget
+        initial_seconds = self.task.get_total_time_seconds() if self.task else 0
+        self.timer_widget = TimerWidget(
+            container,
+            initial_seconds=initial_seconds,
+            on_start=self._on_timer_start,
+            on_stop=self._on_timer_stop,
+            fg_color=("white", "#2D2D2D")
+        )
+        self.timer_widget.pack(fill="x", pady=(0, 16))
+        
         # Buttons
         buttons_frame = ctk.CTkFrame(self, fg_color="transparent")
         buttons_frame.pack(fill="x", padx=20, pady=(0, 20))
@@ -501,6 +563,104 @@ class TaskFormDialog(ctk.CTkToplevel):
         if self.task.blocked_reason:
             self.blocked_entry.insert(0, self.task.blocked_reason)
     
+    def _render_dependencies_list(self, parent):
+        """Render checklist of available tasks for dependencies."""
+        # Get all tasks except this one
+        all_tasks = self.storage.get_all_tasks()
+        available_tasks = [t for t in all_tasks if not self.task or t.id != self.task.id]
+        
+        if not available_tasks:
+            ctk.CTkLabel(
+                parent,
+                text="No other tasks available",
+                font=("Segoe UI", 12),
+                text_color="gray60"
+            ).pack(pady=20)
+            return
+        
+        for task in available_tasks:
+            # Create checkbox variable
+            var = ctk.BooleanVar(value=False)
+            self.dependency_vars[task.id] = var
+            
+            # Check if currently a dependency
+            if self.task and task.id in self.task.dependencies:
+                var.set(True)
+            
+            # Task checkbox
+            status_badge = {"todo": "📝", "in_progress": "⏳", "blocked": "🚫", "completed": "✅"}
+            checkbox = ctk.CTkCheckBox(
+                parent,
+                text=f"{status_badge.get(task.status, '📝')} {task.title}",
+                variable=var,
+                font=("Segoe UI", 12)
+            )
+            checkbox.pack(anchor="w", padx=8, pady=4)
+    
+    def _check_circular_dependency(self, new_deps: List[str]) -> tuple[bool, Optional[str]]:
+        """Check if adding dependencies would create a circular reference."""
+        if not self.task:
+            return True, None
+        
+        # Build dependency graph
+        all_tasks = {t.id: t for t in self.storage.get_all_tasks()}
+        
+        def has_path(from_id: str, to_id: str, visited: set) -> bool:
+            """Check if there's a path from from_id to to_id."""
+            if from_id == to_id:
+                return True
+            if from_id in visited:
+                return False
+            
+            visited.add(from_id)
+            task = all_tasks.get(from_id)
+            if not task:
+                return False
+            
+            for dep_id in task.dependencies:
+                if has_path(dep_id, to_id, visited.copy()):
+                    return True
+            return False
+        
+        # Check each new dependency
+        for dep_id in new_deps:
+            # Check if dep_id depends on this task (would create cycle)
+            if has_path(dep_id, self.task.id, set()):
+                dep_task = all_tasks.get(dep_id)
+                dep_name = dep_task.title if dep_task else "Unknown"
+                return False, f"Cannot add '{dep_name}' - would create circular dependency"
+        
+        return True, None
+    
+    def _check_incomplete_dependencies(self) -> tuple[bool, List[str]]:
+        """Check if task has incomplete dependencies."""
+        if not self.task or not self.task.dependencies:
+            return False, []
+        
+        all_tasks = {t.id: t for t in self.storage.get_all_tasks()}
+        incomplete = []
+        
+        for dep_id in self.task.dependencies:
+            dep_task = all_tasks.get(dep_id)
+            if dep_task and dep_task.status != "completed":
+                incomplete.append(dep_task.title)
+        
+        return len(incomplete) > 0, incomplete
+    
+    def _on_timer_start(self):
+        """Handle timer start."""
+        if self.task:
+            self.task.start_timer()
+            self.storage.save_task(self.task)
+    
+    def _on_timer_stop(self, elapsed_seconds: int):
+        """Handle timer stop."""
+        if self.task:
+            self.task.stop_timer(elapsed_seconds)
+            self.storage.save_task(self.task)
+            # Refresh the logged hours display would require recreating the label
+            # For now, it will update when dialog reopens
+    
     def _on_save(self):
         """Handle save button."""
         # Validate
@@ -525,6 +685,79 @@ class TaskFormDialog(ctk.CTkToplevel):
         }
         status = status_map.get(self.status_menu.get(), "todo")
         
+        # Collect dependencies from checkboxes
+        dependencies = [task_id for task_id, var in self.dependency_vars.items() if var.get()]
+        
+        # Validate circular dependencies
+        valid, error = self._check_circular_dependency(dependencies)
+        if not valid:
+            # Show error dialog
+            error_dialog = ctk.CTkToplevel(self)
+            error_dialog.title("Invalid Dependencies")
+            error_dialog.geometry("400x150")
+            error_dialog.transient(self)
+            error_dialog.grab_set()
+            
+            ctk.CTkLabel(
+                error_dialog,
+                text="⚠️ Circular Dependency Detected",
+                font=("Segoe UI", 14, "bold")
+            ).pack(pady=(20, 10))
+            
+            ctk.CTkLabel(
+                error_dialog,
+                text=error,
+                font=("Segoe UI", 12),
+                wraplength=350
+            ).pack(pady=(0, 20))
+            
+            ctk.CTkButton(
+                error_dialog,
+                text="OK",
+                command=error_dialog.destroy
+            ).pack()
+            
+            return
+        
+        # Check if trying to mark as completed with incomplete dependencies
+        if status == "completed":
+            has_incomplete, incomplete_names = self._check_incomplete_dependencies()
+            if has_incomplete:
+                # Show blocking dialog
+                block_dialog = ctk.CTkToplevel(self)
+                block_dialog.title("Cannot Complete")
+                block_dialog.geometry("450x250")
+                block_dialog.transient(self)
+                block_dialog.grab_set()
+                
+                ctk.CTkLabel(
+                    block_dialog,
+                    text="🚫 Incomplete Dependencies",
+                    font=("Segoe UI", 14, "bold")
+                ).pack(pady=(20, 10))
+                
+                ctk.CTkLabel(
+                    block_dialog,
+                    text="This task cannot be completed because the following\ndependencies are not yet completed:",
+                    font=("Segoe UI", 12)
+                ).pack(pady=(0, 10))
+                
+                deps_text = "\n".join([f"• {name}" for name in incomplete_names])
+                ctk.CTkLabel(
+                    block_dialog,
+                    text=deps_text,
+                    font=("Segoe UI", 11),
+                    text_color="gray60"
+                ).pack(pady=(0, 20))
+                
+                ctk.CTkButton(
+                    block_dialog,
+                    text="OK",
+                    command=block_dialog.destroy
+                ).pack()
+                
+                return
+        
         # Parse tags
         tags = [t.strip() for t in self.tags_entry.get().split(",") if t.strip()]
         
@@ -538,7 +771,8 @@ class TaskFormDialog(ctk.CTkToplevel):
                 priority=self.priority_menu.get().lower(),
                 due_date=self.due_entry.get().strip() or None,
                 tags=tags,
-                blocked_reason=self.blocked_entry.get().strip() or None
+                blocked_reason=self.blocked_entry.get().strip() or None,
+                dependencies=dependencies
             )
         else:
             # Create new
@@ -550,7 +784,8 @@ class TaskFormDialog(ctk.CTkToplevel):
                 priority=self.priority_menu.get().lower(),
                 due_date=self.due_entry.get().strip() or None,
                 tags=tags,
-                blocked_reason=self.blocked_entry.get().strip() or None
+                blocked_reason=self.blocked_entry.get().strip() or None,
+                dependencies=dependencies
             )
         
         # Validate

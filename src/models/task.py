@@ -54,6 +54,9 @@ class Task:
         checklist: Optional[List[ChecklistItem]] = None,
         blocked_reason: Optional[str] = None,
         dependencies: Optional[List[str]] = None,
+        timer_running: bool = False,
+        timer_start_time: Optional[str] = None,
+        timer_elapsed_seconds: int = 0,
         task_id: Optional[str] = None,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
@@ -75,6 +78,9 @@ class Task:
         self.checklist = checklist or []
         self.blocked_reason = blocked_reason
         self.dependencies = dependencies or []
+        self.timer_running = timer_running
+        self.timer_start_time = timer_start_time
+        self.timer_elapsed_seconds = timer_elapsed_seconds
     
     @property
     def checklist_progress(self) -> tuple[int, int]:
@@ -118,6 +124,49 @@ class Task:
         self.checklist = [item for item in self.checklist if item.id != item_id]
         self.updated_at = datetime.now().isoformat()
     
+    def start_timer(self):
+        """Start the task timer."""
+        if not self.timer_running:
+            self.timer_running = True
+            self.timer_start_time = datetime.now().isoformat()
+            self.updated_at = datetime.now().isoformat()
+    
+    def stop_timer(self, elapsed_seconds: int):
+        """Stop the timer and add elapsed time to actual hours."""
+        if self.timer_running:
+            self.timer_running = False
+            self.timer_start_time = None
+           
+            # Add elapsed time to actual hours
+            hours_worked = elapsed_seconds / 3600
+            if self.actual_hours:
+                self.actual_hours += hours_worked
+            else:
+                self.actual_hours = hours_worked
+            
+            # Reset elapsed seconds
+            self.timer_elapsed_seconds = 0
+            self.updated_at = datetime.now().isoformat()
+    
+    def get_timer_display(self) -> str:
+        """Get formatted timer display (HH:MM:SS)."""
+        hours = self.timer_elapsed_seconds // 3600
+        minutes = (self.timer_elapsed_seconds % 3600) // 60
+        seconds = self.timer_elapsed_seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    
+    def get_total_time_seconds(self) -> int:
+        """Get total time including running timer."""
+        total = self.timer_elapsed_seconds
+        if self.timer_running and self.timer_start_time:
+            try:
+                start = datetime.fromisoformat(self.timer_start_time)
+                elapsed_now = (datetime.now() - start).total_seconds()
+                total += int(elapsed_now)
+            except:
+                pass
+        return total
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert task to dictionary for JSON serialization."""
         return {
@@ -136,7 +185,10 @@ class Task:
             "tags": self.tags,
             "checklist": [item.to_dict() for item in self.checklist],
             "blocked_reason": self.blocked_reason,
-            "dependencies": self.dependencies
+            "dependencies": self.dependencies,
+            "timer_running": self.timer_running,
+            "timer_start_time": self.timer_start_time,
+            "timer_elapsed_seconds": self.timer_elapsed_seconds
         }
     
     @classmethod
@@ -159,6 +211,9 @@ class Task:
             checklist=checklist,
             blocked_reason=data.get("blocked_reason"),
             dependencies=data.get("dependencies", []),
+            timer_running=data.get("timer_running", False),
+            timer_start_time=data.get("timer_start_time"),
+            timer_elapsed_seconds=data.get("timer_elapsed_seconds", 0),
             task_id=data.get("id"),
             created_at=data.get("created_at"),
             updated_at=data.get("updated_at"),
