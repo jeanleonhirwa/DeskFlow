@@ -90,10 +90,31 @@ class Project:
         self.notes = notes
         self.tags = tags or []
         self._progress_percentage = 0.0
+        self._storage = None  # Will be set by ProjectsView
     
     @property
     def progress_percentage(self) -> float:
-        """Calculate progress based on completed milestones."""
+        """Calculate progress based on completed tasks."""
+        # Try to get tasks from storage
+        if self._storage:
+            try:
+                all_tasks = self._storage.get_all_tasks()
+                project_tasks = [t for t in all_tasks if t.project_id == self.id]
+                
+                if not project_tasks:
+                    # Fall back to milestones if no tasks
+                    if not self.milestones:
+                        return 0.0
+                    completed = sum(1 for m in self.milestones if m.completed)
+                    return (completed / len(self.milestones)) * 100
+                
+                # Calculate based on tasks
+                completed_tasks = sum(1 for t in project_tasks if t.status == "completed")
+                return (completed_tasks / len(project_tasks)) * 100
+            except:
+                pass
+        
+        # Fallback to milestones-based calculation
         if not self.milestones:
             return 0.0
         completed = sum(1 for m in self.milestones if m.completed)

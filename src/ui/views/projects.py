@@ -234,6 +234,9 @@ class ProjectsView(ctk.CTkScrollableFrame):
         
         # Render project cards in grid
         for i, project in enumerate(self.filtered_projects):
+            # Inject storage reference for progress calculation
+            project._storage = self.storage
+            
             card = ProjectCard(
                 self.projects_container,
                 project=project,
