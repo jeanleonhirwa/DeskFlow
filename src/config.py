@@ -35,32 +35,42 @@ BORDER_RADIUS = 12
 SMALL_BORDER_RADIUS = 8
 ANIMATION_DURATION = 250  # milliseconds
 
-# Light Mode Colors
+# Light Mode Colors (Enhanced v2)
 LIGHT_THEME = {
-    "background": "#FAFAF8",
+    "background": "#F8F9FA",  # Softer white background
     "surface": "#FFFFFF",
-    "surface_secondary": "#F5F5F0",
-    "text_primary": "#2D2D2D",
-    "text_secondary": "#6B6B6B",
-    "accent": "#E07B53",
-    "success": "#4CAF50",
-    "warning": "#FFA726",
-    "error": "#EF5350",
-    "border": "#E0E0E0",
+    "surface_secondary": "#F1F3F4",  # Slightly darker for contrast
+    "surface_hover": "#E8EAED",  # Hover state for interactive elements
+    "text_primary": "#202124",  # Darker for better contrast (WCAG AA)
+    "text_secondary": "#5F6368",  # Medium gray
+    "text_tertiary": "#80868B",  # Light gray for less important text
+    "accent": "#D93025",  # More vibrant red-orange
+    "accent_hover": "#C5221F",  # Darker on hover
+    "success": "#1E8E3E",  # Richer green
+    "warning": "#F9AB00",  # Warmer yellow
+    "error": "#D93025",  # Red
+    "border": "#DADCE0",  # Light border
+    "border_focus": "#1A73E8",  # Blue for focused elements
+    "shadow": "rgba(0, 0, 0, 0.1)"  # Subtle shadow for elevation
 }
 
-# Dark Mode Colors
+# Dark Mode Colors (Enhanced v2)
 DARK_THEME = {
-    "background": "#1E1E1E",
-    "surface": "#2D2D2D",
-    "surface_secondary": "#3A3A3A",
-    "text_primary": "#E8E8E8",
-    "text_secondary": "#A8A8A8",
-    "accent": "#F4A261",
-    "success": "#66BB6A",
-    "warning": "#FFB74D",
-    "error": "#EF5350",
-    "border": "#4A4A4A",
+    "background": "#121212",  # True dark background
+    "surface": "#1E1E1E",  # Slightly lighter surface
+    "surface_secondary": "#2A2A2A",  # Even lighter for hierarchy
+    "surface_hover": "#353535",  # Hover state
+    "text_primary": "#E8EAED",  # High contrast text
+    "text_secondary": "#9AA0A6",  # Medium gray
+    "text_tertiary": "#70757A",  # Dimmer text
+    "accent": "#8AB4F8",  # Softer blue (easier on eyes in dark)
+    "accent_hover": "#AECBFA",  # Lighter blue on hover
+    "success": "#81C995",  # Softer green
+    "warning": "#FDD663",  # Softer yellow
+    "error": "#F28B82",  # Softer red
+    "border": "#3C4043",  # Dark border
+    "border_focus": "#8AB4F8",  # Blue focus indicator
+    "shadow": "rgba(0, 0, 0, 0.3)"  # Deeper shadow for dark mode
 }
 
 # Font Settings

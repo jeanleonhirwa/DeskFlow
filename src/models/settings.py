@@ -22,6 +22,16 @@ class Settings:
         self.task_sort_order = settings_dict.get("task_sort_order", "priority")
         self.first_launch = settings_dict.get("first_launch", True)
         self.last_backup = settings_dict.get("last_backup")
+        
+        # Notification settings
+        self.notification_settings = settings_dict.get("notification_settings", {
+            "enabled": True,
+            "task_due_soon": True,
+            "task_overdue": True,
+            "daily_summary": True,
+            "daily_summary_time": "09:00",
+            "notification_duration": 5000
+        })
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert settings to dictionary for JSON serialization."""
@@ -38,7 +48,8 @@ class Settings:
             "show_completed_tasks": self.show_completed_tasks,
             "task_sort_order": self.task_sort_order,
             "first_launch": self.first_launch,
-            "last_backup": self.last_backup
+            "last_backup": self.last_backup,
+            "notification_settings": self.notification_settings
         }
     
     @classmethod
