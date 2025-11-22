@@ -81,6 +81,68 @@ FONT_SIZE_LARGE = 15
 FONT_SIZE_HEADING = 18
 FONT_SIZE_TITLE = 24
 
+# Enhanced Typography Scale
+TYPOGRAPHY = {
+    "title": (FONT_FAMILY, 24, "bold"),
+    "heading": (FONT_FAMILY, 18, "bold"),
+    "subheading": (FONT_FAMILY, 16, "bold"),
+    "body_bold": (FONT_FAMILY, 14, "bold"),
+    "body": (FONT_FAMILY, 13),
+    "small": (FONT_FAMILY, 12),
+    "caption": (FONT_FAMILY, 11),
+}
+
+# Gradient Definitions
+GRADIENTS = {
+    "blue": ["#4A90E2", "#357ABD"],
+    "orange": ["#F5A623", "#E89A1C"],
+    "green": ["#27AE60", "#229954"],
+    "red": ["#E74C3C", "#C0392B"],
+    "purple": ["#9B59B6", "#8E44AD"],
+    "teal": ["#1ABC9C", "#16A085"],
+}
+
+# Status Gradients
+STATUS_GRADIENTS = {
+    "todo": GRADIENTS["blue"],
+    "in_progress": GRADIENTS["orange"],
+    "blocked": GRADIENTS["red"],
+    "completed": GRADIENTS["green"],
+    "planning": GRADIENTS["blue"],
+    "active": GRADIENTS["green"],
+    "paused": GRADIENTS["orange"],
+    "archived": GRADIENTS["purple"],
+}
+
+# Shadow Definitions
+SHADOWS = {
+    "none": "0 0 0 rgba(0,0,0,0)",
+    "sm": "0 2px 4px rgba(0,0,0,0.08)",
+    "md": "0 4px 12px rgba(0,0,0,0.1)",
+    "lg": "0 8px 24px rgba(0,0,0,0.12)",
+    "xl": "0 12px 32px rgba(0,0,0,0.15)",
+    "hover": "0 12px 32px rgba(0,0,0,0.15)",
+}
+
+# Spacing Scale
+SPACING = {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 48,
+}
+
+# Border Radius Scale
+RADIUS = {
+    "sm": 6,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "full": 9999,
+}
+
 # Default Settings
 DEFAULT_SETTINGS = {
     "theme": "system",  # light, dark, or system

@@ -15,22 +15,34 @@ from config import PROJECT_STATUS, PRIORITY_LEVELS, PROJECT_COLORS
 
 
 class ProjectCard(ctk.CTkFrame):
-    """Project card component for dashboard."""
+    """Modern project card component matching mockup design."""
     
     def __init__(self, parent, project: Project, on_click: Callable, **kwargs):
-        super().__init__(parent, corner_radius=12, fg_color=("white", "#2D2D2D"), **kwargs)
+        super().__init__(
+            parent,
+            corner_radius=16,
+            fg_color=("white", "#1E1E1E"),
+            border_width=1,
+            border_color=("#E0E0E0", "#3C4043"),
+            **kwargs
+        )
         
         self.project = project
         self.on_click = on_click
+        self.default_fg = ("white", "#1E1E1E")
+        self.hover_fg = ("#F8F9FA", "#2A2A2A")
         
         self._create_ui()
         
-        # Make card clickable
+        # Make card clickable with hover effect
         self.bind("<Button-1>", lambda e: on_click(project))
+        self.bind("<Enter>", self._on_hover)
+        self.bind("<Leave>", self._on_leave)
+        self.configure(cursor="hand2")
     
     def _create_ui(self):
-        """Create card UI."""
-        # Color indicator bar
+        """Create modern card UI."""
+        # Thick color indicator bar (left side, 6px)
         color_bar = ctk.CTkFrame(
             self,
             width=6,
@@ -39,85 +51,153 @@ class ProjectCard(ctk.CTkFrame):
         )
         color_bar.pack(side="left", fill="y")
         
-        # Content area
+        # Main content area with generous padding
         content = ctk.CTkFrame(self, fg_color="transparent")
-        content.pack(side="left", fill="both", expand=True, padx=16, pady=12)
+        content.pack(side="left", fill="both", expand=True, padx=24, pady=20)
         
-        # Header row
+        # === HEADER ROW ===
         header = ctk.CTkFrame(content, fg_color="transparent")
-        header.pack(fill="x")
+        header.pack(fill="x", pady=(0, 12))
         
-        # Project name
+        # Project name (larger, bolder)
         name_label = ctk.CTkLabel(
             header,
-            text=truncate_text(self.project.name, 40),
-            font=("Segoe UI", 15, "bold"),
+            text=truncate_text(self.project.name, 35),
+            font=("Segoe UI", 18, "bold"),
             anchor="w"
         )
-        name_label.pack(side="left")
+        name_label.pack(side="left", fill="x", expand=True)
         
-        # Status badge
+        # Status badge (modern pill-style)
+        from ui.components.modern_components import TagChip
+        from config import STATUS_GRADIENTS
+        
         status_colors = {
-            "planning": "#2196F3",
-            "active": "#4CAF50",
-            "paused": "#FFA726",
-            "completed": "#66BB6A",
-            "archived": "#9E9E9E"
+            "planning": "#4A90E2",
+            "active": "#27AE60",
+            "paused": "#F5A623",
+            "completed": "#81C995",
+            "archived": "#9B59B6"
         }
-        status_badge = StatusBadge(
+        status_badge = TagChip(
             header,
-            text=self.project.status,
+            text=self.project.status.upper(),
             color=status_colors.get(self.project.status, "#999999")
         )
-        status_badge.pack(side="right", padx=8)
+        status_badge.pack(side="right", padx=(8, 0))
         
-        # Priority indicator
-        priority_ind = PriorityIndicator(header, self.project.priority)
-        priority_ind.pack(side="right")
+        # Priority indicator (color dot)
+        priority_colors = {"high": "#E74C3C", "medium": "#F5A623", "low": "#95a5a6"}
+        priority_dot = ctk.CTkFrame(
+            header,
+            width=10,
+            height=10,
+           corner_radius=5,
+            fg_color=priority_colors.get(self.project.priority, "#999999")
+        )
+        priority_dot.pack(side="right", padx=(0, 8))
         
-        # Description
+        # === DESCRIPTION ===
         if self.project.description:
             desc_label = ctk.CTkLabel(
                 content,
-                text=truncate_text(self.project.description, 80),
-                font=("Segoe UI", 12),
-                text_color="gray60",
-                anchor="w"
+                text=truncate_text(self.project.description, 100),
+                font=("Segoe UI", 13),
+                text_color=("#5F6368", "#9AA0A6"),
+                anchor="w",
+                justify="left",
+                wraplength=350
             )
-            desc_label.pack(fill="x", pady=(8, 0))
+            desc_label.pack(fill="x", pady=(0, 16))
         
-        # Progress bar
+        # === PROGRESS BAR (Gradient) ===
         progress_frame = ctk.CTkFrame(content, fg_color="transparent")
-        progress_frame.pack(fill="x", pady=(12, 0))
+        progress_frame.pack(fill="x", pady=(0, 16))
         
-        progress_bar = ProgressBar(
+        from ui.components.modern_components import GradientProgress
+        from config import STATUS_GRADIENTS
+        
+        gradient = STATUS_GRADIENTS.get(self.project.status, ["#4A90E2", "#357ABD"])
+        progress_bar = GradientProgress(
             progress_frame,
             progress=self.project.progress_percentage,
-            color=self.project.color
+            gradient_colors=gradient,
+            height=10
         )
         progress_bar.pack(fill="x", side="left", expand=True)
         
+        # Progress percentage label
         progress_label = ctk.CTkLabel(
             progress_frame,
             text=f"{int(self.project.progress_percentage)}%",
-            font=("Segoe UI", 11),
-            text_color="gray60",
+            font=("Segoe UI", 13, "bold"),
+            text_color=self.project.color,
             width=50
         )
-        progress_label.pack(side="right", padx=(8, 0))
+        progress_label.pack(side="right", padx=(12, 0))
         
-        # Footer - stats
-        footer = ctk.CTkFrame(content, fg_color="transparent")
-        footer.pack(fill="x", pady=(12, 0))
+        # === META INFO ROW (Icons + Text) ===
+        meta_row = ctk.CTkFrame(content, fg_color="transparent")
+        meta_row.pack(fill="x")
         
         # Last updated
-        updated_label = ctk.CTkLabel(
-            footer,
-            text=f"Updated {time_ago(self.project.updated_at)}",
-            font=("Segoe UI", 11),
-            text_color="gray50"
+        updated_icon = ctk.CTkLabel(
+            meta_row,
+            text="🕐",
+            font=("Segoe UI", 14)
         )
-        updated_label.pack(side="left")
+        updated_icon.pack(side="left")
+        
+        updated_label = ctk.CTkLabel(
+            meta_row,
+            text=time_ago(self.project.updated_at),
+            font=("Segoe UI", 12),
+            text_color=("#80868B", "#70757A")
+        )
+        updated_label.pack(side="left", padx=(4, 16))
+        
+        # Tech stack count (if available)
+        if self.project.tech_stack:
+            tech_icon = ctk.CTkLabel(
+                meta_row,
+                text="⚙️",
+                font=("Segoe UI", 14)
+            )
+            tech_icon.pack(side="left")
+            
+            tech_label = ctk.CTkLabel(
+                meta_row,
+                text=f"{len(self.project.tech_stack)} tech",
+                font=("Segoe UI", 12),
+                text_color=("#80868B", "#70757A")
+            )
+            tech_label.pack(side="left", padx=(4, 16))
+        
+        # Milestones count
+        if self.project.milestones:
+            milestone_icon = ctk.CTkLabel(
+                meta_row,
+                text="🎯",
+                font=("Segoe UI", 14)
+            )
+            milestone_icon.pack(side="left")
+            
+            completed_milestones = sum(1 for m in self.project.milestones if m.completed)
+            milestone_label = ctk.CTkLabel(
+                meta_row,
+                text=f"{completed_milestones}/{len(self.project.milestones)} milestones",
+                font=("Segoe UI", 12),
+                text_color=("#80868B", "#70757A")
+            )
+            milestone_label.pack(side="left", padx=(4, 0))
+    
+    def _on_hover(self, event):
+        """Handle hover effect."""
+        self.configure(fg_color=self.hover_fg)
+    
+    def _on_leave(self, event):
+        """Handle leave effect."""
+        self.configure(fg_color=self.default_fg)
 
 
 class ProjectsView(ctk.CTkScrollableFrame):
@@ -137,33 +217,35 @@ class ProjectsView(ctk.CTkScrollableFrame):
     
     def _create_ui(self):
         """Create view UI."""
-        # Header section
+        # Header section with better spacing
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=20, pady=(20, 10))
+        header.pack(fill="x", padx=32, pady=(32, 16))
         
-        # Title
+        # Title (larger, bolder)
         title = ctk.CTkLabel(
             header,
             text="Projects",
-            font=("Segoe UI", 24, "bold")
+            font=("Segoe UI", 28, "bold")
         )
         title.pack(side="left")
         
-        # Create button
+        # Create button (modern styling)
         create_btn = IconButton(
             header,
             text="+ New Project",
             command=self._on_create_project,
-            fg_color=("#E07B53", "#F4A261"),
-            hover_color=("#D06B43", "#E49251"),
+            fg_color=("#D93025", "#8AB4F8"),
+            hover_color=("#C5221F", "#AECBFA"),
             text_color="white",
-            font=("Segoe UI", 13, "bold")
+            font=("Segoe UI", 14, "bold"),
+            height=44,
+            corner_radius=12
         )
         create_btn.pack(side="right")
         
-        # Filters and search
+        # Filters and search with better spacing
         filters_frame = ctk.CTkFrame(self, fg_color="transparent")
-        filters_frame.pack(fill="x", padx=20, pady=(10, 20))
+        filters_frame.pack(fill="x", padx=32, pady=(0, 24))
         
         # Search bar
         self.search_bar = SearchBar(
@@ -175,20 +257,21 @@ class ProjectsView(ctk.CTkScrollableFrame):
         
         # Filter dropdown
         filter_label = ctk.CTkLabel(filters_frame, text="Filter:", font=("Segoe UI", 13))
-        filter_label.pack(side="left", padx=(0, 8))
+        filter_label.pack(side="left", padx=(0, 12))
         
         self.filter_menu = ctk.CTkOptionMenu(
             filters_frame,
             values=["All", "Active", "Planning", "Paused", "Completed", "Archived"],
             command=self._on_filter_change,
             width=150,
-            font=("Segoe UI", 13)
+            font=("Segoe UI", 13),
+            corner_radius=10
         )
         self.filter_menu.pack(side="left")
         
         # Projects grid container
         self.projects_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.projects_container.pack(fill="both", expand=True, padx=20)
+        self.projects_container.pack(fill="both", expand=True, padx=32, pady=(0, 24))
     
     def refresh(self):
         """Refresh projects list from storage."""
@@ -232,7 +315,7 @@ class ProjectsView(ctk.CTkScrollableFrame):
             empty.pack(fill="both", expand=True)
             return
         
-        # Render project cards in grid
+        # Render project cards with better spacing
         for i, project in enumerate(self.filtered_projects):
             # Inject storage reference for progress calculation
             project._storage = self.storage
@@ -242,7 +325,7 @@ class ProjectsView(ctk.CTkScrollableFrame):
                 project=project,
                 on_click=self._on_project_click
             )
-            card.pack(fill="x", pady=8)
+            card.pack(fill="x", pady=12)
     
     def _on_search(self, query: str):
         """Handle search query change."""
