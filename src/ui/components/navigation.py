@@ -123,6 +123,11 @@ class NavigationBar(ctk.CTkFrame):
         # Update icon based on mode
         self.theme_btn.configure(text="☀️" if mode == "dark" else "🌙")
     
+    def set_active_tab(self, tab_id: str):
+        """Programmatically set active tab (for keyboard shortcuts)."""
+        self._set_active_tab(tab_id)
+        self.on_tab_change(tab_id)
+    
     def set_theme_icon(self, mode: str):
         """Set theme icon based on mode."""
         self.theme_btn.configure(text="☀️" if mode == "dark" else "🌙")

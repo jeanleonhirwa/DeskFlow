@@ -45,6 +45,9 @@ class MainWindow(ctk.CTk):
         # Initialize UI
         self._create_ui()
         
+        # Setup keyboard shortcuts
+        self._setup_keyboard_shortcuts()
+        
         # Load initial view
         self._show_view("projects")
         
@@ -132,6 +135,43 @@ class MainWindow(ctk.CTk):
         
         # Reload settings after dialog closes
         self.settings = self.storage.get_settings()
+    
+    def _setup_keyboard_shortcuts(self):
+        """Setup global keyboard shortcuts."""
+        # Navigation shortcuts - Ctrl+1-4
+        self.bind("<Control-Key-1>", lambda e: self._quick_nav("projects"))
+        self.bind("<Control-Key-2>", lambda e: self._quick_nav("tasks"))
+        self.bind("<Control-Key-3>", lambda e: self._quick_nav("daily_planner"))
+        self.bind("<Control-Key-4>", lambda e: self._quick_nav("analytics"))
+        
+        # Action shortcuts
+        self.bind("<Control-n>", lambda e: self._quick_new())
+        self.bind("<Control-f>", lambda e: self._quick_search())
+        
+        # Utility shortcuts
+        self.bind("<Control-comma>", lambda e: self._on_settings())  # Ctrl+,
+        self.bind("<Control-t>", lambda e: self._on_theme_toggle())
+        self.bind("<Control-q>", lambda e: self._on_closing())
+    
+    def _quick_nav(self, view_name: str):
+        """Quick navigation to view via keyboard."""
+        self.nav_bar.set_active_tab(view_name)
+        self._show_view(view_name)
+    
+    def _quick_new(self):
+        """Create new item based on current view."""
+        if self.current_view:
+            view_class = self.current_view.__class__.__name__
+            if view_class == "ProjectsView":
+                self.current_view._on_create_project()
+            elif view_class == "TasksView":
+                self.current_view._on_create_task()
+            # Daily Planner doesn't have a "new" action
+    
+    def _quick_search(self):
+        """Focus search bar in current view."""
+        if self.current_view and hasattr(self.current_view, 'search_bar'):
+            self.current_view.search_bar.focus_set()
     
     def _on_closing(self):
         """Handle window close event."""
