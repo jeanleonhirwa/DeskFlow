@@ -48,6 +48,17 @@ class MainWindow(ctk.CTk):
         # Setup keyboard shortcuts
         self._setup_keyboard_shortcuts()
         
+        # Initialize notification system
+        from ui.components.toast_notification import ToastNotification
+        from utils.notification_manager import NotificationManager
+        
+        self.notification_manager = NotificationManager(
+            self.storage,
+            self._show_toast_notification
+        )
+        # Start notification checking in background
+        self.notification_manager.start()
+        
         # Load initial view
         self._show_view("projects")
         
@@ -173,8 +184,18 @@ class MainWindow(ctk.CTk):
         if self.current_view and hasattr(self.current_view, 'search_bar'):
             self.current_view.search_bar.focus_set()
     
+    def _show_toast_notification(self, title: str, message: str, duration: int = 5000, 
+                                  on_click=None):
+        """Show toast notification."""
+        from ui.components.toast_notification import ToastNotification
+        ToastNotification.show(self, title, message, duration, on_click)
+    
     def _on_closing(self):
         """Handle window close event."""
+        # Stop notification manager
+        if hasattr(self, 'notification_manager'):
+            self.notification_manager.stop()
+        
         # Save window size and position
         self.settings.update(
             window_size={
